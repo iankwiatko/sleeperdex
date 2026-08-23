@@ -1,6 +1,6 @@
 import "./App.css";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ChangeEvent } from "react";
 
 import TCGdex from "@tcgdex/sdk";
 import { useQuery } from "@tanstack/react-query";
@@ -9,22 +9,44 @@ const tcgdex = new TCGdex("en");
 const series = "sv";
 // Series: swsh, sv, me
 
-async function getSeries() {
-  const seriesData = await tcgdex.serie.get(series);
+type SeriesData = {
+  sets?: Array<{ id: string; name: string }>;
+};
+
+type SetData = {
+  name?: string;
+  cards?: Array<{ id: string }>;
+};
+
+type Card = {
+  id: string;
+  name: string;
+  rarity?: string;
+  pricing?: {
+    tcgplayer?: Record<string, { marketPrice?: number | null }>;
+  };
+};
+
+//1
+async function getSeries(): Promise<SeriesData> {
+  const seriesData = (await tcgdex.serie.get(series)) as SeriesData;
   return seriesData;
 }
 
-async function getSet(setId) {
-  const setData = await tcgdex.set.get(setId);
+async function getSet(setId: string): Promise<SetData> {
+  const setData = (await tcgdex.set.get(setId)) as SetData;
   return setData;
 }
 
-function getUniqueCardIds(setData) {
+function getUniqueCardIds(setData: SetData | undefined): string[] {
   return [...new Set(setData?.cards?.map((card) => card.id) ?? [])];
 }
 
-async function getCardDataFromSet(cardIds, batchSize = 20) {
-  const cardDetails = [];
+async function getCardDataFromSet(
+  cardIds: string[],
+  batchSize = 20,
+): Promise<Card[]> {
+  const cardDetails: Card[] = [];
 
   for (let i = 0; i < cardIds.length; i += batchSize) {
     const chunk = cardIds.slice(i, i + batchSize);
@@ -36,7 +58,7 @@ async function getCardDataFromSet(cardIds, batchSize = 20) {
       const cardId = chunk[j];
 
       if (outcome.status === "fulfilled") {
-        cardDetails.push(outcome.value);
+        cardDetails.push(outcome.value as Card);
       } else {
         console.error(`Card fetch failed for ${cardId}:`, outcome.reason);
       }
@@ -44,6 +66,10 @@ async function getCardDataFromSet(cardIds, batchSize = 20) {
   }
   return cardDetails;
 }
+
+//---------------------------------------------------------------------------------
+// Main App Component
+//---------------------------------------------------------------------------------
 
 function App() {
   const [selectedSetId, setSelectedSetId] = useState("");
@@ -98,7 +124,9 @@ function App() {
       <h2>Choose a Set</h2>
       <select
         value={effectiveSetId}
-        onChange={(event) => setSelectedSetId(event.target.value)}
+        onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+          setSelectedSetId(event.target.value)
+        }
       >
         {seriesData?.sets?.map((serieSet) => (
           <option key={serieSet.id} value={serieSet.id}>
@@ -118,7 +146,9 @@ function App() {
         placeholder="0.00"
         step="0.01"
         value={price}
-        onChange={(event) => setPrice(event.target.value)}
+        onChange={(event: ChangeEvent<HTMLInputElement>) =>
+          setPrice(event.target.value)
+        }
       />
 
       <ul>
