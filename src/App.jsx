@@ -6,7 +6,8 @@ import TCGdex from "@tcgdex/sdk";
 import { useQuery } from "@tanstack/react-query";
 
 const tcgdex = new TCGdex("en");
-const series = "swsh";
+const series = "sv";
+// Series: swsh, sv, me
 
 async function getSeries() {
   const seriesData = await tcgdex.serie.get(series);
@@ -46,7 +47,7 @@ async function getCardDataFromSet(cardIds, batchSize = 20) {
 
 function App() {
   const [selectedSetId, setSelectedSetId] = useState("");
-  const effectiveSetId = selectedSetId || seriesData?.sets?.[0]?.id || "";
+  const [price, setPrice] = useState("");
 
   const {
     data: seriesData,
@@ -57,6 +58,8 @@ function App() {
     queryKey: ["series", series],
     queryFn: getSeries,
   });
+
+  const effectiveSetId = selectedSetId || seriesData?.sets?.[0]?.id || "";
 
   const {
     data: setData,
@@ -91,7 +94,7 @@ function App() {
 
   return (
     <>
-      <h1>Pokemon Bulk Sorter</h1>
+      <h1>sleeperdex</h1>
       <h2>Choose a Set</h2>
       <select
         value={effectiveSetId}
@@ -103,14 +106,32 @@ function App() {
           </option>
         ))}
       </select>
-
       <h2>Results</h2>
       <p>{setData?.name}</p>
       <p>Loaded {cardData?.length ?? 0} full card records.</p>
+      <hr />
+      <h2>Set Price Filter</h2>
+      <input
+        id="price-input"
+        type="number"
+        min="0"
+        placeholder="0.00"
+        step="0.01"
+        value={price}
+        onChange={(event) => setPrice(event.target.value)}
+      />
+
       <ul>
         {cardData?.map((card) => (
           <li key={card.id}>
-            {card.name} ({card.id})
+            <strong>{card.name}</strong>
+            {Object.entries(card.pricing?.tcgplayer ?? {})
+              .filter(([, variant]) => variant?.marketPrice != null)
+              .map(([variantName, variant]) => (
+                <div key={variantName}>
+                  {variantName}: ${variant.marketPrice}
+                </div>
+              ))}
           </li>
         ))}
       </ul>
