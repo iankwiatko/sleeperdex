@@ -2,10 +2,9 @@ import "./App.css";
 
 import { useMemo, useState, type ChangeEvent } from "react";
 
-import TCGdex from "@tcgdex/sdk";
 import { useQuery } from "@tanstack/react-query";
 
-const tcgdex = new TCGdex("en");
+const TCGDEX_BASE = "https://api.tcgdex.net/v2/en";
 const CARD_BATCH_SIZE = 20;
 const SERIES_OPTIONS = ["sv", "me", "swsh"];
 
@@ -28,13 +27,33 @@ type Card = {
 };
 
 async function getSeries(seriesId: string): Promise<SeriesData> {
-  const seriesData = (await tcgdex.serie.get(seriesId)) as SeriesData;
-  return seriesData;
+  const res = await fetch(`${TCGDEX_BASE}/series/${seriesId}`);
+  if (!res.ok) {
+    throw new Error(
+      `Failed to fetch series "${seriesId}": ${res.status} ${res.statusText}`,
+    );
+  }
+  return res.json() as Promise<SeriesData>;
 }
 
 async function getSet(setId: string): Promise<SetData> {
-  const setData = (await tcgdex.set.get(setId)) as SetData;
-  return setData;
+  const res = await fetch(`${TCGDEX_BASE}/sets/${setId}`);
+  if (!res.ok) {
+    throw new Error(
+      `Failed to fetch set "${setId}": ${res.status} ${res.statusText}`,
+    );
+  }
+  return res.json() as Promise<SetData>;
+}
+
+async function getCard(cardId: string): Promise<Card> {
+  const res = await fetch(`${TCGDEX_BASE}/cards/${cardId}`);
+  if (!res.ok) {
+    throw new Error(
+      `Failed to fetch card "${cardId}": ${res.status} ${res.statusText}`,
+    );
+  }
+  return res.json() as Promise<Card>;
 }
 
 function getUniqueCardIds(setData: SetData | undefined): string[] {
@@ -50,13 +69,13 @@ async function getCardDataFromSet(
   for (let i = 0; i < cardIds.length; i += batchSize) {
     const chunk = cardIds.slice(i, i + batchSize);
     const chunkResults = await Promise.allSettled(
-      chunk.map((cardId) => tcgdex.card.get(cardId)),
+      chunk.map((cardId) => getCard(cardId)),
     );
     for (const [index, outcome] of chunkResults.entries()) {
       const cardId = chunk[index];
 
       if (outcome.status === "fulfilled") {
-        cardDetails.push(outcome.value as Card);
+        cardDetails.push(outcome.value);
       } else {
         console.error(`Card fetch failed for ${cardId}:`, outcome.reason);
       }
