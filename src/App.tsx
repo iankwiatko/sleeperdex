@@ -92,6 +92,7 @@ function App() {
   const [seriesId, setSeriesId] = useState(SERIES_OPTIONS[0]);
   const [selectedSetId, setSelectedSetId] = useState("");
   const [price, setPrice] = useState("");
+  const [appliedPrice, setAppliedPrice] = useState("");
 
   const {
     data: seriesData,
@@ -128,6 +129,18 @@ function App() {
     queryFn: () => getCardDataFromSet(cardIds),
     enabled: cardIds.length > 0,
   });
+
+  const minPrice = appliedPrice ? Number(appliedPrice) : undefined;
+
+  const filteredCardData = useMemo(() => {
+    if (minPrice == null || Number.isNaN(minPrice)) return cardData;
+    return cardData?.filter((card) =>
+      Object.values(card.pricing?.tcgplayer ?? {}).some(
+        (variant) =>
+          variant?.marketPrice != null && variant.marketPrice >= minPrice,
+      ),
+    );
+  }, [cardData, minPrice]);
 
   if (isSeriesLoading) return <p>Loading series...</p>;
   if (isSeriesError) return <p>Failed to load series: {seriesError.message}</p>;
@@ -183,6 +196,7 @@ function App() {
       <p>{setData?.name}</p>
       <p>Loaded {cardData?.length ?? 0} full card records.</p>
       <hr />
+
       <h2>Set Price Filter</h2>
       <input
         id="price-input"
@@ -195,13 +209,21 @@ function App() {
           setPrice(event.target.value)
         }
       />
-
+      <button type="button" onClick={() => setAppliedPrice(price)}>
+        Filter
+      </button>
       <ul>
-        {cardData?.map((card) => (
+        {filteredCardData?.map((card) => (
           <li key={card.id}>
             <strong>{card.name}</strong>
             {Object.entries(card.pricing?.tcgplayer ?? {})
-              .filter(([, variant]) => variant?.marketPrice != null)
+              .filter(
+                ([, variant]) =>
+                  variant?.marketPrice != null &&
+                  (minPrice == null ||
+                    Number.isNaN(minPrice) ||
+                    variant.marketPrice >= minPrice),
+              )
               .map(([variantName, variant]) => (
                 <div key={variantName}>
                   {variantName}: ${variant.marketPrice}
