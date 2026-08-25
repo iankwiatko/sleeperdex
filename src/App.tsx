@@ -6,8 +6,8 @@ import TCGdex from "@tcgdex/sdk";
 import { useQuery } from "@tanstack/react-query";
 
 const tcgdex = new TCGdex("en");
-const series = "sv";
-// Series: swsh, sv, me
+const CARD_BATCH_SIZE = 20;
+const SERIES_OPTIONS = ["sv", "me", "swsh"];
 
 type SeriesData = {
   sets?: Array<{ id: string; name: string }>;
@@ -27,9 +27,8 @@ type Card = {
   };
 };
 
-//1
-async function getSeries(): Promise<SeriesData> {
-  const seriesData = (await tcgdex.serie.get(series)) as SeriesData;
+async function getSeries(seriesId: string): Promise<SeriesData> {
+  const seriesData = (await tcgdex.serie.get(seriesId)) as SeriesData;
   return seriesData;
 }
 
@@ -44,7 +43,7 @@ function getUniqueCardIds(setData: SetData | undefined): string[] {
 
 async function getCardDataFromSet(
   cardIds: string[],
-  batchSize = 20,
+  batchSize = CARD_BATCH_SIZE,
 ): Promise<Card[]> {
   const cardDetails: Card[] = [];
 
@@ -53,9 +52,8 @@ async function getCardDataFromSet(
     const chunkResults = await Promise.allSettled(
       chunk.map((cardId) => tcgdex.card.get(cardId)),
     );
-    for (let j = 0; j < chunkResults.length; j += 1) {
-      const outcome = chunkResults[j];
-      const cardId = chunk[j];
+    for (const [index, outcome] of chunkResults.entries()) {
+      const cardId = chunk[index];
 
       if (outcome.status === "fulfilled") {
         cardDetails.push(outcome.value as Card);
@@ -72,6 +70,7 @@ async function getCardDataFromSet(
 //---------------------------------------------------------------------------------
 
 function App() {
+  const [seriesId, setSeriesId] = useState(SERIES_OPTIONS[0]);
   const [selectedSetId, setSelectedSetId] = useState("");
   const [price, setPrice] = useState("");
 
@@ -81,8 +80,8 @@ function App() {
     isError: isSeriesError,
     error: seriesError,
   } = useQuery({
-    queryKey: ["series", series],
-    queryFn: getSeries,
+    queryKey: ["series", seriesId],
+    queryFn: () => getSeries(seriesId),
   });
 
   const effectiveSetId = selectedSetId || seriesData?.sets?.[0]?.id || "";
@@ -106,7 +105,7 @@ function App() {
     isError: cardIsError,
     error: cardError,
   } = useQuery({
-    queryKey: ["card", effectiveSetId],
+    queryKey: ["cards", effectiveSetId, cardIds],
     queryFn: () => getCardDataFromSet(cardIds),
     enabled: cardIds.length > 0,
   });
@@ -121,19 +120,46 @@ function App() {
   return (
     <>
       <h1>sleeperdex</h1>
-      <h2>Choose a Set</h2>
-      <select
-        value={effectiveSetId}
-        onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-          setSelectedSetId(event.target.value)
-        }
+      <div
+        style={{
+          display: "flex",
+          gap: "1rem",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
       >
-        {seriesData?.sets?.map((serieSet) => (
-          <option key={serieSet.id} value={serieSet.id}>
-            {serieSet.name} ({serieSet.id})
-          </option>
-        ))}
-      </select>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <h2>Choose a Series</h2>
+          <select
+            value={seriesId}
+            onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+              setSeriesId(event.target.value);
+              setSelectedSetId("");
+            }}
+          >
+            {SERIES_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <h2>Choose a Set</h2>
+          <select
+            value={effectiveSetId}
+            onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+              setSelectedSetId(event.target.value)
+            }
+          >
+            {seriesData?.sets?.map((serieSet) => (
+              <option key={serieSet.id} value={serieSet.id}>
+                {serieSet.name} ({serieSet.id})
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
       <h2>Results</h2>
       <p>{setData?.name}</p>
       <p>Loaded {cardData?.length ?? 0} full card records.</p>
