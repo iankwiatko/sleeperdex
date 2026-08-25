@@ -142,16 +142,15 @@ function App() {
     );
   }, [cardData, minPrice]);
 
-  if (isSeriesLoading) return <p>Loading series...</p>;
-  if (isSeriesError) return <p>Failed to load series: {seriesError.message}</p>;
-  if (setIsLoading) return <p>Loading set...</p>;
-  if (setIsError) return <p>Failed to load set: {setError.message}</p>;
-  if (cardIsLoading) return <p>Loading cards...</p>;
-  if (cardIsError) return <p>Failed to load cards: {cardError.message}</p>;
-
   return (
     <>
       <h1>sleeperdex</h1>
+      <h2>
+        <em>
+          find sleeper value in <strong>your</strong> bulk
+        </em>
+      </h2>
+      <hr />
       <div
         style={{
           display: "flex",
@@ -164,6 +163,7 @@ function App() {
           <h2>Choose a Series</h2>
           <select
             value={seriesId}
+            disabled={isSeriesLoading}
             onChange={(event: ChangeEvent<HTMLSelectElement>) => {
               setSeriesId(event.target.value);
               setSelectedSetId("");
@@ -180,6 +180,7 @@ function App() {
           <h2>Choose a Set</h2>
           <select
             value={effectiveSetId}
+            disabled={isSeriesLoading || !seriesData?.sets?.length}
             onChange={(event: ChangeEvent<HTMLSelectElement>) =>
               setSelectedSetId(event.target.value)
             }
@@ -192,46 +193,78 @@ function App() {
           </select>
         </div>
       </div>
-      <h2>Results</h2>
-      <p>{setData?.name}</p>
-      <p>Loaded {cardData?.length ?? 0} full card records.</p>
-      <hr />
 
-      <h2>Set Price Filter</h2>
-      <input
-        id="price-input"
-        type="number"
-        min="0"
-        placeholder="0.00"
-        step="0.01"
-        value={price}
-        onChange={(event: ChangeEvent<HTMLInputElement>) =>
-          setPrice(event.target.value)
-        }
-      />
-      <button type="button" onClick={() => setAppliedPrice(price)}>
-        Filter
-      </button>
-      <ul>
-        {filteredCardData?.map((card) => (
-          <li key={card.id}>
-            <strong>{card.name}</strong>
-            {Object.entries(card.pricing?.tcgplayer ?? {})
-              .filter(
-                ([, variant]) =>
-                  variant?.marketPrice != null &&
-                  (minPrice == null ||
-                    Number.isNaN(minPrice) ||
-                    variant.marketPrice >= minPrice),
-              )
-              .map(([variantName, variant]) => (
-                <div key={variantName}>
-                  {variantName}: ${variant.marketPrice}
-                </div>
-              ))}
-          </li>
-        ))}
-      </ul>
+      {isSeriesError && (
+        <p role="alert">Failed to load series: {seriesError.message}</p>
+      )}
+      {!isSeriesError && setIsError && (
+        <p role="alert">Failed to load set: {setError.message}</p>
+      )}
+      {!isSeriesError && !setIsError && cardIsError && (
+        <p role="alert">Failed to load cards: {cardError.message}</p>
+      )}
+
+      {!isSeriesError && !setIsError && !cardIsError && (
+        <>
+          <h2>Results</h2>
+          {isSeriesLoading || setIsLoading ? (
+            <p>Loading set...</p>
+          ) : (
+            <p>
+              {cardIsLoading
+                ? "Loading cards..."
+                : `Loaded ${cardData?.length ?? 0} total cards from set.`}
+            </p>
+          )}
+
+          <h2>Set Price Filter</h2>
+          <div
+            style={{
+              display: "flex",
+              gap: "0.5rem",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <input
+              id="price-input"
+              type="number"
+              min="0"
+              placeholder="0.00"
+              step="0.01"
+              value={price}
+              onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                setPrice(event.target.value)
+              }
+            />
+            <button type="button" onClick={() => setAppliedPrice(price)}>
+              Filter
+            </button>
+          </div>
+          <hr />
+
+          <ul>
+            {filteredCardData?.map((card) => (
+              <li key={card.id}>
+                <strong>{card.name}</strong>
+                {Object.entries(card.pricing?.tcgplayer ?? {})
+                  .filter(
+                    ([, variant]) =>
+                      variant?.marketPrice != null &&
+                      (minPrice == null ||
+                        Number.isNaN(minPrice) ||
+                        variant.marketPrice >= minPrice),
+                  )
+                  .map(([variantName, variant]) => (
+                    <div key={variantName}>
+                      {variantName}: ${variant.marketPrice}
+                    </div>
+                  ))}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </>
   );
 }
