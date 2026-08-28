@@ -6,7 +6,8 @@ import { useQuery } from "@tanstack/react-query";
 
 const TCGDEX_BASE = "https://api.tcgdex.net/v2/en";
 const CARD_BATCH_SIZE = 20;
-const SERIES_OPTIONS = ["sv", "me", "swsh"];
+const SERIES_OPTIONS = ["me", "sv", "swsh"];
+const ALLOWED_RARITIES = ["common", "uncommon", "rare", "double rare"];
 
 type SeriesData = {
   sets?: Array<{ id: string; name: string }>;
@@ -60,6 +61,17 @@ function getUniqueCardIds(setData: SetData | undefined): string[] {
   return [...new Set(setData?.cards?.map((card) => card.id) ?? [])];
 }
 
+const NUMBERED_SET_ID_PATTERN = /^[a-z]+\d+(\.\d+[a-z]?)?$/i;
+
+function getNumberedSets(
+  seriesData: SeriesData | undefined,
+): Array<{ id: string; name: string }> {
+  return (
+    seriesData?.sets?.filter((set) => NUMBERED_SET_ID_PATTERN.test(set.id)) ??
+    []
+  );
+}
+
 async function getCardDataFromSet(
   cardIds: string[],
   batchSize = CARD_BATCH_SIZE,
@@ -93,6 +105,7 @@ function App() {
   const [selectedSetId, setSelectedSetId] = useState("");
   const [price, setPrice] = useState("");
   const [appliedPrice, setAppliedPrice] = useState("");
+  const [rarityFilterDisabled, setRarityFilterDisabled] = useState(false);
 
   const {
     data: seriesData,
@@ -104,7 +117,9 @@ function App() {
     queryFn: () => getSeries(seriesId),
   });
 
-  const effectiveSetId = selectedSetId || seriesData?.sets?.[0]?.id || "";
+  const numberedSets = useMemo(() => getNumberedSets(seriesData), [seriesData]);
+
+  const effectiveSetId = selectedSetId || numberedSets[0]?.id || "";
 
   const {
     data: setData,
@@ -132,15 +147,23 @@ function App() {
 
   const minPrice = appliedPrice ? Number(appliedPrice) : undefined;
 
-  const filteredCardData = useMemo(() => {
-    if (minPrice == null || Number.isNaN(minPrice)) return cardData;
+  const rarityFilteredCardData = useMemo(() => {
+    if (rarityFilterDisabled) return cardData;
     return cardData?.filter((card) =>
+      ALLOWED_RARITIES.includes(card.rarity?.toLowerCase() ?? ""),
+    );
+  }, [cardData, rarityFilterDisabled]);
+
+  const priceFilteredCardData = useMemo(() => {
+    if (minPrice == null || Number.isNaN(minPrice))
+      return rarityFilteredCardData;
+    return rarityFilteredCardData?.filter((card) =>
       Object.values(card.pricing?.tcgplayer ?? {}).some(
         (variant) =>
           variant?.marketPrice != null && variant.marketPrice >= minPrice,
       ),
     );
-  }, [cardData, minPrice]);
+  }, [rarityFilteredCardData, minPrice]);
 
   return (
     <>
@@ -151,6 +174,40 @@ function App() {
         </em>
       </h2>
       <hr />
+
+      <h2>debug</h2>
+      {isSeriesLoading || setIsLoading ? (
+        <p>Loading set...</p>
+      ) : (
+        <p>
+          {cardIsLoading
+            ? "Loading cards..."
+            : `Loaded ${cardData?.length ?? 0} total cards from set.`}
+        </p>
+      )}
+      <div
+        style={{
+          display: "flex",
+          gap: "0.5rem",
+          alignItems: "center",
+          justifyContent: "center",
+          marginTop: "0.5rem",
+        }}
+      >
+        <label htmlFor="rarity-filter-toggle">
+          disable rarity filter (debug)
+        </label>
+        <input
+          id="rarity-filter-toggle"
+          type="checkbox"
+          checked={rarityFilterDisabled}
+          onChange={(event: ChangeEvent<HTMLInputElement>) =>
+            setRarityFilterDisabled(event.target.checked)
+          }
+        />
+      </div>
+      <hr />
+
       <div
         style={{
           display: "flex",
@@ -180,12 +237,12 @@ function App() {
           <h2>Choose a Set</h2>
           <select
             value={effectiveSetId}
-            disabled={isSeriesLoading || !seriesData?.sets?.length}
+            disabled={isSeriesLoading || !numberedSets.length}
             onChange={(event: ChangeEvent<HTMLSelectElement>) =>
               setSelectedSetId(event.target.value)
             }
           >
-            {seriesData?.sets?.map((serieSet) => (
+            {numberedSets.map((serieSet) => (
               <option key={serieSet.id} value={serieSet.id}>
                 {serieSet.name} ({serieSet.id})
               </option>
@@ -206,17 +263,6 @@ function App() {
 
       {!isSeriesError && !setIsError && !cardIsError && (
         <>
-          <h2>Results</h2>
-          {isSeriesLoading || setIsLoading ? (
-            <p>Loading set...</p>
-          ) : (
-            <p>
-              {cardIsLoading
-                ? "Loading cards..."
-                : `Loaded ${cardData?.length ?? 0} total cards from set.`}
-            </p>
-          )}
-
           <h2>Set Price Filter</h2>
           <div
             style={{
@@ -243,10 +289,14 @@ function App() {
           </div>
           <hr />
 
+          {priceFilteredCardData?.length === 0 && (
+            <p>No cards match the current filters.</p>
+          )}
+
           <ul>
-            {filteredCardData?.map((card) => (
+            {priceFilteredCardData?.map((card) => (
               <li key={card.id}>
-                <strong>{card.name}</strong>
+                <strong>{card.name}</strong> - <em>{card.rarity}</em>
                 {Object.entries(card.pricing?.tcgplayer ?? {})
                   .filter(
                     ([, variant]) =>
