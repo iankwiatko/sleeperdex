@@ -3,6 +3,7 @@ import "./App.css";
 import { useMemo, useState, type ChangeEvent } from "react";
 
 import { useQuery } from "@tanstack/react-query";
+import { fetchWithTimeout } from "./utils/fetchWithTimeout";
 
 const TCGDEX_BASE = "https://api.tcgdex.net/v2/en";
 const CARD_BATCH_SIZE = 20;
@@ -28,7 +29,7 @@ type Card = {
 };
 
 async function getSeries(seriesId: string): Promise<SeriesData> {
-  const res = await fetch(`${TCGDEX_BASE}/series/${seriesId}`);
+  const res = await fetchWithTimeout(`${TCGDEX_BASE}/series/${seriesId}`);
   if (!res.ok) {
     throw new Error(
       `Failed to fetch series "${seriesId}": ${res.status} ${res.statusText}`,
@@ -38,7 +39,7 @@ async function getSeries(seriesId: string): Promise<SeriesData> {
 }
 
 async function getSet(setId: string): Promise<SetData> {
-  const res = await fetch(`${TCGDEX_BASE}/sets/${setId}`);
+  const res = await fetchWithTimeout(`${TCGDEX_BASE}/sets/${setId}`);
   if (!res.ok) {
     throw new Error(
       `Failed to fetch set "${setId}": ${res.status} ${res.statusText}`,
@@ -48,7 +49,7 @@ async function getSet(setId: string): Promise<SetData> {
 }
 
 async function getCard(cardId: string): Promise<Card> {
-  const res = await fetch(`${TCGDEX_BASE}/cards/${cardId}`);
+  const res = await fetchWithTimeout(`${TCGDEX_BASE}/cards/${cardId}`);
   if (!res.ok) {
     throw new Error(
       `Failed to fetch card "${cardId}": ${res.status} ${res.statusText}`,
