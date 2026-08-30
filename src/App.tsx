@@ -170,28 +170,32 @@ function App() {
 
   return (
     <>
-      <div
-        style={{
-          position: "fixed",
-          top: "1rem",
-          right: "1rem",
-        }}
-      >
-        <button type="button" onClick={() => setIsDebugOpen(true)}>
-          Debug
-        </button>
-      </div>
+      {import.meta.env.DEV && (
+        <>
+          <div
+            style={{
+              position: "fixed",
+              top: "1rem",
+              right: "1rem",
+            }}
+          >
+            <button type="button" onClick={() => setIsDebugOpen(true)}>
+              Debug
+            </button>
+          </div>
 
-      <DebugModal
-        isOpen={isDebugOpen}
-        onClose={() => setIsDebugOpen(false)}
-        isSeriesLoading={isSeriesLoading}
-        setIsLoading={setIsLoading}
-        cardIsLoading={cardIsLoading}
-        cardCount={cardData?.length ?? 0}
-        rarityFilterDisabled={rarityFilterDisabled}
-        onToggleRarityFilter={setRarityFilterDisabled}
-      />
+          <DebugModal
+            isOpen={isDebugOpen}
+            onClose={() => setIsDebugOpen(false)}
+            isSeriesLoading={isSeriesLoading}
+            setIsLoading={setIsLoading}
+            cardIsLoading={cardIsLoading}
+            cardCount={cardData?.length ?? 0}
+            rarityFilterDisabled={rarityFilterDisabled}
+            onToggleRarityFilter={setRarityFilterDisabled}
+          />
+        </>
+      )}
 
       <h1>sleeperdex</h1>
       <h2>
