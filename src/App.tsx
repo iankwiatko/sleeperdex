@@ -4,6 +4,7 @@ import { useMemo, useState, type ChangeEvent } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 import { fetchWithTimeout } from "./utils/fetchWithTimeout";
+import { DebugModal } from "./components/DebugModal";
 
 const TCGDEX_BASE = "https://api.tcgdex.net/v2/en";
 const CARD_BATCH_SIZE = 20;
@@ -107,6 +108,7 @@ function App() {
   const [price, setPrice] = useState("");
   const [appliedPrice, setAppliedPrice] = useState("");
   const [rarityFilterDisabled, setRarityFilterDisabled] = useState(false);
+  const [isDebugOpen, setIsDebugOpen] = useState(false);
 
   const {
     data: seriesData,
@@ -168,45 +170,35 @@ function App() {
 
   return (
     <>
+      <div
+        style={{
+          position: "fixed",
+          top: "1rem",
+          right: "1rem",
+        }}
+      >
+        <button type="button" onClick={() => setIsDebugOpen(true)}>
+          Debug
+        </button>
+      </div>
+
+      <DebugModal
+        isOpen={isDebugOpen}
+        onClose={() => setIsDebugOpen(false)}
+        isSeriesLoading={isSeriesLoading}
+        setIsLoading={setIsLoading}
+        cardIsLoading={cardIsLoading}
+        cardCount={cardData?.length ?? 0}
+        rarityFilterDisabled={rarityFilterDisabled}
+        onToggleRarityFilter={setRarityFilterDisabled}
+      />
+
       <h1>sleeperdex</h1>
       <h2>
         <em>
           find sleeper value in <strong>your</strong> bulk
         </em>
       </h2>
-      <hr />
-
-      <h2>debug</h2>
-      {isSeriesLoading || setIsLoading ? (
-        <p>Loading set...</p>
-      ) : (
-        <p>
-          {cardIsLoading
-            ? "Loading cards..."
-            : `Loaded ${cardData?.length ?? 0} total cards from set.`}
-        </p>
-      )}
-      <div
-        style={{
-          display: "flex",
-          gap: "0.5rem",
-          alignItems: "center",
-          justifyContent: "center",
-          marginTop: "0.5rem",
-        }}
-      >
-        <label htmlFor="rarity-filter-toggle">
-          disable rarity filter (debug)
-        </label>
-        <input
-          id="rarity-filter-toggle"
-          type="checkbox"
-          checked={rarityFilterDisabled}
-          onChange={(event: ChangeEvent<HTMLInputElement>) =>
-            setRarityFilterDisabled(event.target.checked)
-          }
-        />
-      </div>
       <hr />
 
       <div
