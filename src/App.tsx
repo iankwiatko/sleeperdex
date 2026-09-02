@@ -22,8 +22,14 @@ type SetData = {
 
 type Card = {
   id: string;
+  localId: string;
   name: string;
   rarity?: string;
+  set?: {
+    cardCount?: {
+      official?: number;
+    };
+  };
   pricing?: {
     tcgplayer?: Record<string, { marketPrice?: number | null }>;
   };
@@ -290,10 +296,14 @@ function App() {
             <p>No cards match the current filters.</p>
           )}
 
-          <ul>
+          <ul style={{ listStyle: "none", padding: 0 }}>
             {priceFilteredCardData?.map((card) => (
               <li key={card.id}>
-                <strong>{card.name}</strong> - <em>{card.rarity}</em>
+                <strong>
+                  {card.name} {card.localId}/{card.set?.cardCount?.official}
+                </strong>
+                {" - "}
+                <em>{card.rarity}</em>
                 {Object.entries(card.pricing?.tcgplayer ?? {})
                   .filter(
                     ([, variant]) =>
