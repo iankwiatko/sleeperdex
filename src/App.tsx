@@ -212,6 +212,7 @@ function App() {
       <hr />
 
       <div
+        className="set-controls"
         style={{
           display: "flex",
           gap: "1rem",
@@ -219,7 +220,7 @@ function App() {
           justifyContent: "center",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+        <div className="set-control">
           <h2>Choose a Series</h2>
           <select
             value={seriesId}
@@ -236,7 +237,7 @@ function App() {
             ))}
           </select>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+        <div className="set-control">
           <h2>Choose a Set</h2>
           <select
             value={effectiveSetId}
@@ -268,6 +269,7 @@ function App() {
         <>
           <h2>Set Price Filter</h2>
           <div
+            className="price-filter"
             style={{
               display: "flex",
               gap: "0.5rem",
@@ -296,27 +298,32 @@ function App() {
             <p>No cards match the current filters.</p>
           )}
 
-          <ul style={{ listStyle: "none", padding: 0 }}>
+          <ul className="card-results">
             {priceFilteredCardData?.map((card) => (
-              <li key={card.id}>
-                <strong>
-                  {card.name} {card.localId}/{card.set?.cardCount?.official}
-                </strong>
-                {" - "}
-                <em>{card.rarity}</em>
-                {Object.entries(card.pricing?.tcgplayer ?? {})
-                  .filter(
-                    ([, variant]) =>
-                      variant?.marketPrice != null &&
-                      (minPrice == null ||
-                        Number.isNaN(minPrice) ||
-                        variant.marketPrice >= minPrice),
-                  )
-                  .map(([variantName, variant]) => (
-                    <div key={variantName}>
-                      {variantName}: ${variant.marketPrice}
-                    </div>
-                  ))}
+              <li key={card.id} className="card-result">
+                <div className="card-result-header">
+                  <strong>{card.name}</strong>
+                  <span>
+                    {card.localId}/{card.set?.cardCount?.official}
+                  </span>
+                </div>
+                <em className="card-result-rarity">{card.rarity}</em>
+                <div className="card-result-prices">
+                  {Object.entries(card.pricing?.tcgplayer ?? {})
+                    .filter(
+                      ([, variant]) =>
+                        variant?.marketPrice != null &&
+                        (minPrice == null ||
+                          Number.isNaN(minPrice) ||
+                          variant.marketPrice >= minPrice),
+                    )
+                    .map(([variantName, variant]) => (
+                      <div key={variantName} className="card-result-price">
+                        <span>{variantName}</span>
+                        <strong>${variant.marketPrice}</strong>
+                      </div>
+                    ))}
+                </div>
               </li>
             ))}
           </ul>
