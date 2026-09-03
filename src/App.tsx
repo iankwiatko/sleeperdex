@@ -9,7 +9,15 @@ import { DebugModal } from "./components/DebugModal";
 const TCGDEX_BASE = "https://api.tcgdex.net/v2/en";
 const CARD_BATCH_SIZE = 20;
 const SERIES_OPTIONS = ["me", "sv", "swsh"];
-const ALLOWED_RARITIES = ["common", "uncommon", "rare", "double rare"];
+const ALLOWED_RARITIES = [
+  "common",
+  "uncommon",
+  "rare",
+  "double rare",
+  "holo rare",
+  "holo rare v",
+  "holo rare vmax",
+];
 
 type SeriesData = {
   sets?: Array<{ id: string; name: string }>;
