@@ -3,6 +3,7 @@ import "./App.css";
 import { useMemo, useState, type ChangeEvent } from "react";
 
 import { useQuery } from "@tanstack/react-query";
+import { z } from "zod";
 import { fetchWithTimeout } from "./utils/fetchWithTimeout";
 import { DebugModal } from "./components/DebugModal";
 
@@ -11,29 +12,40 @@ const CARD_BATCH_SIZE = 20;
 const SERIES_OPTIONS = ["me", "sv", "swsh"];
 const ALLOWED_RARITIES = ["common", "uncommon", "rare", "double rare"];
 
-type SeriesData = {
-  sets?: Array<{ id: string; name: string }>;
-};
+const seriesSchema = z.object({
+  sets: z.array(z.object({ id: z.string(), name: z.string() })).optional(),
+});
 
-type SetData = {
-  name?: string;
-  cards?: Array<{ id: string }>;
-};
+const setSchema = z.object({
+  name: z.string().optional(),
+  cards: z.array(z.object({ id: z.string() })).optional(),
+});
 
-type Card = {
-  id: string;
-  localId: string;
-  name: string;
-  rarity?: string;
-  set?: {
-    cardCount?: {
-      official?: number;
-    };
-  };
-  pricing?: {
-    tcgplayer?: Record<string, { marketPrice?: number | null }>;
-  };
-};
+const cardSchema = z.object({
+  id: z.string(),
+  localId: z.string(),
+  name: z.string(),
+  rarity: z.string().optional(),
+  set: z
+    .object({
+      cardCount: z.object({ official: z.number().optional() }).optional(),
+    })
+    .optional(),
+  pricing: z
+    .object({
+      tcgplayer: z
+        .record(
+          z.string(),
+          z.object({ marketPrice: z.number().nullable().optional() }),
+        )
+        .optional(),
+    })
+    .optional(),
+});
+
+type SeriesData = z.infer<typeof seriesSchema>;
+type SetData = z.infer<typeof setSchema>;
+type Card = z.infer<typeof cardSchema>;
 
 async function getSeries(seriesId: string): Promise<SeriesData> {
   const res = await fetchWithTimeout(`${TCGDEX_BASE}/series/${seriesId}`);
@@ -42,7 +54,7 @@ async function getSeries(seriesId: string): Promise<SeriesData> {
       `Failed to fetch series "${seriesId}": ${res.status} ${res.statusText}`,
     );
   }
-  return res.json() as Promise<SeriesData>;
+  return seriesSchema.parse(await res.json());
 }
 
 async function getSet(setId: string): Promise<SetData> {
@@ -52,7 +64,7 @@ async function getSet(setId: string): Promise<SetData> {
       `Failed to fetch set "${setId}": ${res.status} ${res.statusText}`,
     );
   }
-  return res.json() as Promise<SetData>;
+  return setSchema.parse(await res.json());
 }
 
 async function getCard(cardId: string): Promise<Card> {
@@ -62,7 +74,7 @@ async function getCard(cardId: string): Promise<Card> {
       `Failed to fetch card "${cardId}": ${res.status} ${res.statusText}`,
     );
   }
-  return res.json() as Promise<Card>;
+  return cardSchema.parse(await res.json());
 }
 
 function getUniqueCardIds(setData: SetData | undefined): string[] {
