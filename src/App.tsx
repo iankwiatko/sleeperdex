@@ -179,6 +179,12 @@ function App() {
 
   const minPrice = appliedPrice ? Number(appliedPrice) : undefined;
 
+  const isLoadingResults =
+    isSeriesLoading ||
+    setIsLoading ||
+    cardIsLoading ||
+    (cardIds.length > 0 && cardData == null);
+
   const rarityFilteredCardData = useMemo(() => {
     if (rarityFilterDisabled) return cardData;
     return cardData?.filter((card) =>
@@ -244,15 +250,7 @@ function App() {
       </h2>
       <hr />
 
-      <div
-        className="set-controls"
-        style={{
-          display: "flex",
-          gap: "1rem",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
+      <div className="set-controls">
         <div className="set-control">
           <h2>Choose a Series</h2>
           <select
@@ -301,13 +299,11 @@ function App() {
       {!isSeriesError && !setIsError && !cardIsError && (
         <>
           <h2>Set Price Filter</h2>
-          <div
+          <form
             className="price-filter"
-            style={{
-              display: "flex",
-              gap: "0.5rem",
-              alignItems: "center",
-              justifyContent: "center",
+            onSubmit={(event) => {
+              event.preventDefault();
+              setAppliedPrice(price);
             }}
           >
             <input
@@ -321,9 +317,7 @@ function App() {
                 setPrice(event.target.value)
               }
             />
-            <button type="button" onClick={() => setAppliedPrice(price)}>
-              Filter
-            </button>
+            <button type="submit">Filter</button>
             <select
               id="sort-order"
               aria-label="Sort by price"
@@ -335,50 +329,54 @@ function App() {
               <option value="asc">Price: Low to High</option>
               <option value="desc">Price: High to Low</option>
             </select>
-          </div>
+          </form>
           <hr />
 
-          {sortedCardData?.length === 0 && (
+          {isLoadingResults && <p>Loading cards...</p>}
+          {!isLoadingResults && sortedCardData?.length === 0 && (
             <p>No cards match the current filters.</p>
           )}
 
           <ul className="card-results">
-            {sortedCardData?.map((card) => (
-              <li key={card.id} className="card-result">
-                {getCardImageUrl(card) && (
-                  <img
-                    className="card-result-image"
-                    src={getCardImageUrl(card)}
-                    alt={card.name}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                )}
-                <div className="card-result-header">
-                  <strong>{card.name}</strong>
-                  <span>
-                    {card.localId}/{card.set?.cardCount?.official}
-                  </span>
-                </div>
-                <em className="card-result-rarity">{card.rarity}</em>
-                <div className="card-result-prices">
-                  {Object.entries(card.pricing?.tcgplayer ?? {})
-                    .filter(
-                      ([, variant]) =>
-                        variant?.marketPrice != null &&
-                        (minPrice == null ||
-                          Number.isNaN(minPrice) ||
-                          variant.marketPrice >= minPrice),
-                    )
-                    .map(([variantName, variant]) => (
-                      <div key={variantName} className="card-result-price">
-                        <span>{variantName}</span>
-                        <strong>${variant.marketPrice}</strong>
-                      </div>
-                    ))}
-                </div>
-              </li>
-            ))}
+            {sortedCardData?.map((card) => {
+              const imageUrl = getCardImageUrl(card);
+              return (
+                <li key={card.id} className="card-result">
+                  {imageUrl && (
+                    <img
+                      className="card-result-image"
+                      src={imageUrl}
+                      alt={card.name}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  )}
+                  <div className="card-result-header">
+                    <strong>{card.name}</strong>
+                    <span>
+                      {card.localId}/{card.set?.cardCount?.official}
+                    </span>
+                  </div>
+                  <em className="card-result-rarity">{card.rarity}</em>
+                  <div className="card-result-prices">
+                    {Object.entries(card.pricing?.tcgplayer ?? {})
+                      .filter(
+                        ([, variant]) =>
+                          variant?.marketPrice != null &&
+                          (minPrice == null ||
+                            Number.isNaN(minPrice) ||
+                            variant.marketPrice >= minPrice),
+                      )
+                      .map(([variantName, variant]) => (
+                        <div key={variantName} className="card-result-price">
+                          <span>{variantName}</span>
+                          <strong>${variant.marketPrice}</strong>
+                        </div>
+                      ))}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         </>
       )}
