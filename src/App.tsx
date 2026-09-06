@@ -5,10 +5,16 @@ import { useMemo, useState, type ChangeEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchWithTimeout } from "./utils/fetchWithTimeout";
 import { DebugModal } from "./components/DebugModal";
+import { PokeballLoader, useSpinnerPhase } from "./components/PokeballLoader";
 
 const TCGDEX_BASE = "https://api.tcgdex.net/v2/en";
 const CARD_BATCH_SIZE = 20;
 const SERIES_OPTIONS = ["me", "sv", "swsh"];
+const SERIES_LABELS: Record<string, string> = {
+  me: "Mega Evolution",
+  sv: "Scarlet & Violet",
+  swsh: "Sword & Shield",
+};
 const ALLOWED_RARITIES = [
   "common",
   "uncommon",
@@ -136,7 +142,7 @@ function App() {
   const [price, setPrice] = useState("");
   const [appliedPrice, setAppliedPrice] = useState("");
   const [rarityFilterDisabled, setRarityFilterDisabled] = useState(false);
-  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [isDebugOpen, setIsDebugOpen] = useState(false);
 
   const {
@@ -184,6 +190,8 @@ function App() {
     setIsLoading ||
     cardIsLoading ||
     (cardIds.length > 0 && cardData == null);
+
+  const spinnerPhase = useSpinnerPhase(isLoadingResults);
 
   const rarityFilteredCardData = useMemo(() => {
     if (rarityFilterDisabled) return cardData;
@@ -242,18 +250,27 @@ function App() {
         </>
       )}
 
-      <h1>sleeperdex</h1>
-      <h2>
-        <em>
-          find sleeper value in <strong>your</strong> bulk
-        </em>
-      </h2>
-      <hr />
+      <header className="app-header">
+        <img src="/sleeperdex.png" alt="" className="app-logo" />
+        <div className="app-heading">
+          <h1>sleeperdex</h1>
+          <p className="app-tagline">
+            find sleeper value in <strong>your</strong> bulk
+          </p>
+        </div>
+      </header>
 
-      <div className="set-controls">
-        <div className="set-control">
-          <h2>Choose a Series</h2>
+      <form
+        className="controls-bar"
+        onSubmit={(event) => {
+          event.preventDefault();
+          setAppliedPrice(price);
+        }}
+      >
+        <div className="control-group">
+          <label htmlFor="series-select">Series</label>
           <select
+            id="series-select"
             value={seriesId}
             disabled={isSeriesLoading}
             onChange={(event: ChangeEvent<HTMLSelectElement>) => {
@@ -263,14 +280,15 @@ function App() {
           >
             {SERIES_OPTIONS.map((option) => (
               <option key={option} value={option}>
-                {option}
+                {SERIES_LABELS[option] ?? option} ({option})
               </option>
             ))}
           </select>
         </div>
-        <div className="set-control">
-          <h2>Choose a Set</h2>
+        <div className="control-group">
+          <label htmlFor="set-select">Set</label>
           <select
+            id="set-select"
             value={effectiveSetId}
             disabled={isSeriesLoading || !numberedSets.length}
             onChange={(event: ChangeEvent<HTMLSelectElement>) =>
@@ -284,7 +302,37 @@ function App() {
             ))}
           </select>
         </div>
-      </div>
+        <div className="control-group">
+          <label htmlFor="price-input">Min Price</label>
+          <input
+            id="price-input"
+            type="number"
+            min="0"
+            placeholder="0.00"
+            step="0.01"
+            value={price}
+            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+              setPrice(event.target.value)
+            }
+          />
+        </div>
+        <div className="control-group">
+          <label htmlFor="sort-order">Sort by Price</label>
+          <select
+            id="sort-order"
+            value={sortOrder}
+            onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+              setSortOrder(event.target.value as SortOrder)
+            }
+          >
+            <option value="asc">Low to High</option>
+            <option value="desc">High to Low</option>
+          </select>
+        </div>
+        <button type="submit" className="filter-button">
+          Filter
+        </button>
+      </form>
 
       {isSeriesError && (
         <p role="alert">Failed to load series: {seriesError.message}</p>
@@ -298,86 +346,58 @@ function App() {
 
       {!isSeriesError && !setIsError && !cardIsError && (
         <>
-          <h2>Set Price Filter</h2>
-          <form
-            className="price-filter"
-            onSubmit={(event) => {
-              event.preventDefault();
-              setAppliedPrice(price);
-            }}
-          >
-            <input
-              id="price-input"
-              type="number"
-              min="0"
-              placeholder="0.00"
-              step="0.01"
-              value={price}
-              onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                setPrice(event.target.value)
-              }
-            />
-            <button type="submit">Filter</button>
-            <select
-              id="sort-order"
-              aria-label="Sort by price"
-              value={sortOrder}
-              onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-                setSortOrder(event.target.value as SortOrder)
-              }
-            >
-              <option value="asc">Price: Low to High</option>
-              <option value="desc">Price: High to Low</option>
-            </select>
-          </form>
-          <hr />
-
-          {isLoadingResults && <p>Loading cards...</p>}
-          {!isLoadingResults && sortedCardData?.length === 0 && (
+          <PokeballLoader phase={spinnerPhase} />
+          {spinnerPhase === "hidden" && sortedCardData?.length === 0 && (
             <p>No cards match the current filters.</p>
           )}
 
-          <ul className="card-results">
-            {sortedCardData?.map((card) => {
-              const imageUrl = getCardImageUrl(card);
-              return (
-                <li key={card.id} className="card-result">
-                  {imageUrl && (
-                    <img
-                      className="card-result-image"
-                      src={imageUrl}
-                      alt={card.name}
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  )}
-                  <div className="card-result-header">
-                    <strong>{card.name}</strong>
-                    <span>
-                      {card.localId}/{card.set?.cardCount?.official}
-                    </span>
-                  </div>
-                  <em className="card-result-rarity">{card.rarity}</em>
-                  <div className="card-result-prices">
-                    {Object.entries(card.pricing?.tcgplayer ?? {})
-                      .filter(
-                        ([, variant]) =>
-                          variant?.marketPrice != null &&
-                          (minPrice == null ||
-                            Number.isNaN(minPrice) ||
-                            variant.marketPrice >= minPrice),
-                      )
-                      .map(([variantName, variant]) => (
-                        <div key={variantName} className="card-result-price">
-                          <span>{variantName}</span>
-                          <strong>${variant.marketPrice}</strong>
-                        </div>
-                      ))}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+          {spinnerPhase === "hidden" && (
+            <ul className="card-results">
+              {sortedCardData?.map((card, index) => {
+                const imageUrl = getCardImageUrl(card);
+                return (
+                  <li
+                    key={card.id}
+                    className="card-result"
+                    style={{ animationDelay: `${Math.min(index, 20) * 35}ms` }}
+                  >
+                    {imageUrl && (
+                      <img
+                        className="card-result-image"
+                        src={imageUrl}
+                        alt={card.name}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    )}
+                    <div className="card-result-header">
+                      <strong>{card.name}</strong>
+                      <span>
+                        {card.localId}/{card.set?.cardCount?.official}
+                      </span>
+                    </div>
+                    <em className="card-result-rarity">{card.rarity}</em>
+                    <div className="card-result-prices">
+                      {Object.entries(card.pricing?.tcgplayer ?? {})
+                        .filter(
+                          ([, variant]) =>
+                            variant?.marketPrice != null &&
+                            (minPrice == null ||
+                              Number.isNaN(minPrice) ||
+                              variant.marketPrice >= minPrice),
+                        )
+                        .map(([variantName, variant]) => (
+                          <div key={variantName} className="card-result-price">
+                            <span>{variantName}</span>
+                            <strong>${variant.marketPrice}</strong>
+                          </div>
+                        ))}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </>
       )}
     </>
