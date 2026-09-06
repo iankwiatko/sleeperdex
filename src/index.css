@@ -30,6 +30,34 @@
   }
 }
 
+html {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+
+  &:hover,
+  &:focus-within {
+    scrollbar-color: var(--border) transparent;
+  }
+
+  &::-webkit-scrollbar {
+    width: 0.5rem;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 999px;
+  }
+
+  &:hover::-webkit-scrollbar-thumb,
+  &:focus-within::-webkit-scrollbar-thumb {
+    background: var(--border);
+  }
+}
+
 body {
   margin: 0;
 }
@@ -38,7 +66,6 @@ body {
   width: 70%;
   margin: 0 auto;
   text-align: center;
-  border-inline: 0.0625rem solid var(--border);
   min-height: 100svh;
   display: flex;
   flex-direction: column;
@@ -50,7 +77,6 @@ body {
 
   @media (max-width: 36em) {
     width: 100%;
-    border-inline: none;
   }
 }
 
