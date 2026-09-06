@@ -43,6 +43,8 @@ type Card = {
   };
 };
 
+type SortOrder = "asc" | "desc";
+
 async function getSeries(seriesId: string): Promise<SeriesData> {
   const res = await fetchWithTimeout(`${TCGDEX_BASE}/series/${seriesId}`);
   if (!res.ok) {
@@ -75,6 +77,13 @@ async function getCard(cardId: string): Promise<Card> {
 
 function getUniqueCardIds(setData: SetData | undefined): string[] {
   return [...new Set(setData?.cards?.map((card) => card.id) ?? [])];
+}
+
+function getCardMaxPrice(card: Card): number {
+  const prices = Object.values(card.pricing?.tcgplayer ?? {})
+    .map((variant) => variant?.marketPrice)
+    .filter((marketPrice): marketPrice is number => marketPrice != null);
+  return prices.length ? Math.max(...prices) : -Infinity;
 }
 
 const NUMBERED_SET_ID_PATTERN = /^[a-z]+\d+(\.\d+[a-z]?)?$/i;
@@ -122,6 +131,7 @@ function App() {
   const [price, setPrice] = useState("");
   const [appliedPrice, setAppliedPrice] = useState("");
   const [rarityFilterDisabled, setRarityFilterDisabled] = useState(false);
+  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
   const [isDebugOpen, setIsDebugOpen] = useState(false);
 
   const {
@@ -181,6 +191,16 @@ function App() {
       ),
     );
   }, [rarityFilteredCardData, minPrice]);
+
+  const sortedCardData = useMemo(() => {
+    const sorted = [...(priceFilteredCardData ?? [])];
+    sorted.sort((a, b) =>
+      sortOrder === "asc"
+        ? getCardMaxPrice(a) - getCardMaxPrice(b)
+        : getCardMaxPrice(b) - getCardMaxPrice(a),
+    );
+    return sorted;
+  }, [priceFilteredCardData, sortOrder]);
 
   return (
     <>
@@ -299,15 +319,26 @@ function App() {
             <button type="button" onClick={() => setAppliedPrice(price)}>
               Filter
             </button>
+            <select
+              id="sort-order"
+              aria-label="Sort by price"
+              value={sortOrder}
+              onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+                setSortOrder(event.target.value as SortOrder)
+              }
+            >
+              <option value="asc">Price: Low to High</option>
+              <option value="desc">Price: High to Low</option>
+            </select>
           </div>
           <hr />
 
-          {priceFilteredCardData?.length === 0 && (
+          {sortedCardData?.length === 0 && (
             <p>No cards match the current filters.</p>
           )}
 
           <ul className="card-results">
-            {priceFilteredCardData?.map((card) => (
+            {sortedCardData?.map((card) => (
               <li key={card.id} className="card-result">
                 <div className="card-result-header">
                   <strong>{card.name}</strong>
