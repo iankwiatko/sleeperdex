@@ -33,6 +33,7 @@ type Card = {
   localId: string;
   name: string;
   rarity?: string;
+  image?: string;
   set?: {
     cardCount?: {
       official?: number;
@@ -42,6 +43,10 @@ type Card = {
     tcgplayer?: Record<string, { marketPrice?: number | null }>;
   };
 };
+
+function getCardImageUrl(card: Card): string | undefined {
+  return card.image ? `${card.image}/low.webp` : undefined;
+}
 
 type SortOrder = "asc" | "desc";
 
@@ -340,6 +345,15 @@ function App() {
           <ul className="card-results">
             {sortedCardData?.map((card) => (
               <li key={card.id} className="card-result">
+                {getCardImageUrl(card) && (
+                  <img
+                    className="card-result-image"
+                    src={getCardImageUrl(card)}
+                    alt={card.name}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                )}
                 <div className="card-result-header">
                   <strong>{card.name}</strong>
                   <span>
