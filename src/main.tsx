@@ -2,6 +2,7 @@ import "./index.css";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
+import { Analytics } from "@vercel/analytics/react";
 import App from "./App";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { StrictMode } from "react";
@@ -27,6 +28,7 @@ createRoot(rootElement).render(
     <QueryClientProvider client={queryClient}>
       <App />
       <ReactQueryDevtools initialIsOpen={false} />
+      <Analytics />
     </QueryClientProvider>
   </StrictMode>,
 );
