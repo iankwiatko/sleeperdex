@@ -57,6 +57,17 @@ export function DebugModal({
             }
           />
         </div>
+        <a
+          className="debug-status-badge"
+          href="https://status.tcgdex.dev/?monitor=api-na-east"
+          target="_blank"
+          rel="noreferrer"
+        >
+          <img
+            src="https://status.tcgdex.dev/badge/api-na-east/status"
+            alt="TCGdex API North America East status"
+          />
+        </a>
       </div>
     </div>,
     document.body,

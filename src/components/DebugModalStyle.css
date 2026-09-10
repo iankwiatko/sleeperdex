@@ -4,18 +4,19 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0, 0, 0, 0.6);
+  background-color: rgba(8, 6, 13, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .debug-modal-content {
-  background-color: #242424;
-  color: #fff;
+  background-color: var(--bg);
+  color: var(--text-h);
   padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  border: 0.0625rem solid var(--border);
+  border-radius: 0.5rem;
+  box-shadow: var(--shadow);
   max-width: 400px;
   width: 90%;
   display: flex;
@@ -35,7 +36,17 @@
 }
 
 .debug-modal-close {
+  padding: 0.25rem 0.5rem;
+  border: 0.0625rem solid var(--accent-border);
+  border-radius: 0.25rem;
+  background: var(--accent-bg);
+  color: var(--text-h);
   cursor: pointer;
+}
+
+.debug-modal-close:hover {
+  background: var(--accent);
+  color: #fff;
 }
 
 .debug-modal-row {
@@ -43,4 +54,14 @@
   gap: 0.5rem;
   align-items: center;
   justify-content: center;
+}
+
+.debug-status-badge {
+  align-self: center;
+  line-height: 0;
+}
+
+.debug-status-badge:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
 }
