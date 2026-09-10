@@ -255,7 +255,7 @@ function App() {
         <div className="app-heading">
           <h1>sleeperdex</h1>
           <p className="app-tagline">
-            find sleeper value in <strong>your</strong> bulk
+            find value in <strong>your</strong> bulk
           </p>
         </div>
       </header>
