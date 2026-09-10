@@ -40,6 +40,8 @@
 .card-result {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto 2.9em 1.45em auto;
+  align-content: start;
   gap: 0.5rem;
   min-inline-size: 0;
   padding: 0.625rem;
@@ -59,6 +61,7 @@
 }
 
 .card-result-header,
+.card-result-meta,
 .card-result-price {
   display: flex;
   flex-wrap: wrap;
@@ -67,8 +70,18 @@
   gap: 0.25rem 0.75rem;
 }
 
+.card-result-header {
+  align-items: flex-start;
+}
+
+.card-result-meta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 0.25rem;
+}
+
 .card-result-header strong,
-.card-result-header span,
 .card-result-price span,
 .card-result-price strong {
   min-inline-size: 0;
@@ -76,11 +89,29 @@
 }
 
 .card-result-header strong {
+  display: -webkit-box;
+  flex: 1 1 100%;
   color: var(--text-h);
   font-size: clamp(0.8125rem, 2.5vw, 1rem);
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 
-.card-result-header span,
+.card-result-meta span {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.card-result-rarity {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-result-meta span,
 .card-result-rarity {
   color: var(--text);
   font-size: clamp(0.75rem, 2vw, 0.875rem);

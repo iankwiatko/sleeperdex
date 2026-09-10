@@ -22,7 +22,6 @@ const ALLOWED_RARITIES = [
   "double rare",
   "holo rare",
   "holo rare v",
-  "holo rare vmax",
 ];
 
 type SeriesData = {
@@ -372,11 +371,13 @@ function App() {
                     )}
                     <div className="card-result-header">
                       <strong>{card.name}</strong>
+                    </div>
+                    <div className="card-result-meta">
+                      <em className="card-result-rarity">{card.rarity}</em>
                       <span>
                         {card.localId}/{card.set?.cardCount?.official}
                       </span>
                     </div>
-                    <em className="card-result-rarity">{card.rarity}</em>
                     <div className="card-result-prices">
                       {Object.entries(card.pricing?.tcgplayer ?? {})
                         .filter(
