@@ -1,6 +1,6 @@
 import "./App.css";
 
-import { useMemo, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 import { fetchWithTimeout } from "./utils/fetchWithTimeout";
@@ -10,6 +10,7 @@ import { usePokeballLoader } from "./components/PokeballLodaer/usePokeballLoader
 
 const TCGDEX_BASE = "https://api.tcgdex.net/v2/en";
 const CARD_BATCH_SIZE = 20;
+const PRICE_FILTER_DEBOUNCE_MS = 500;
 const SERIES_OPTIONS = ["me", "sv", "swsh"];
 const SERIES_LABELS: Record<string, string> = {
   me: "Mega Evolution",
@@ -97,7 +98,7 @@ function getCardMaxPrice(card: Card): number {
   return prices.length ? Math.max(...prices) : -Infinity;
 }
 
-const NUMBERED_SET_ID_PATTERN = /^[a-z]+\d+(\.\d+[a-z]?)?$/i;
+const NUMBERED_SET_ID_PATTERN = /^[a-z]+\d{1,3}(\.\d+[a-z]?)?$/i;
 
 function getNumberedSets(
   seriesData: SeriesData | undefined,
@@ -155,9 +156,17 @@ function App() {
     queryFn: () => getSeries(seriesId),
   });
 
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setAppliedPrice(price);
+    }, PRICE_FILTER_DEBOUNCE_MS);
+    return () => window.clearTimeout(timeoutId);
+  }, [price]);
+
   const numberedSets = useMemo(() => getNumberedSets(seriesData), [seriesData]);
 
-  const effectiveSetId = selectedSetId || numberedSets[0]?.id || "";
+  const latestSetId = numberedSets[numberedSets.length - 1]?.id ?? "";
+  const effectiveSetId = selectedSetId || latestSetId;
 
   const {
     data: setData,
@@ -255,18 +264,12 @@ function App() {
         <div className="app-heading">
           <h1>sleeperdex</h1>
           <p className="app-tagline">
-            find value in <strong>your</strong> bulk
+            find sleeper value in <strong>your</strong> bulk
           </p>
         </div>
       </header>
 
-      <form
-        className="controls-bar"
-        onSubmit={(event) => {
-          event.preventDefault();
-          setAppliedPrice(price);
-        }}
-      >
+      <div className="controls-bar">
         <div className="control-group">
           <label htmlFor="series-select">Series</label>
           <select
@@ -303,7 +306,7 @@ function App() {
           </select>
         </div>
         <div className="control-group">
-          <label htmlFor="price-input">Min Price</label>
+          <label htmlFor="price-input">Minimum Market Price</label>
           <input
             id="price-input"
             type="number"
@@ -317,7 +320,7 @@ function App() {
           />
         </div>
         <div className="control-group">
-          <label htmlFor="sort-order">Sort by Price</label>
+          <label htmlFor="sort-order">Sort by</label>
           <select
             id="sort-order"
             value={sortOrder}
@@ -325,14 +328,11 @@ function App() {
               setSortOrder(event.target.value as SortOrder)
             }
           >
-            <option value="asc">Low to High</option>
-            <option value="desc">High to Low</option>
+            <option value="asc">Price: Low to High</option>
+            <option value="desc">Price: High to Low</option>
           </select>
         </div>
-        <button type="submit" className="filter-button">
-          Filter
-        </button>
-      </form>
+      </div>
 
       {isSeriesError && (
         <p role="alert">Failed to load series: {seriesError.message}</p>
@@ -352,7 +352,10 @@ function App() {
           )}
 
           {spinnerPhase === "hidden" && (
-            <ul className="card-results">
+            <ul
+              className="card-results"
+              key={`${effectiveSetId}-${sortOrder}-${appliedPrice}-${rarityFilterDisabled}`}
+            >
               {sortedCardData?.map((card, index) => {
                 const imageUrl = getCardImageUrl(card);
                 return (
