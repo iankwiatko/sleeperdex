@@ -4,8 +4,9 @@ import { useMemo, useState, type ChangeEvent } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 import { fetchWithTimeout } from "./utils/fetchWithTimeout";
-import { DebugModal } from "./components/DebugModal";
-import { PokeballLoader, useSpinnerPhase } from "./components/PokeballLoader";
+import { DebugModal } from "./components/DebugModal/DebugModal";
+import { PokeballLoader } from "./components/PokeballLodaer/PokeballLoader";
+import { usePokeballLoader } from "./components/PokeballLodaer/usePokeballLoader";
 
 const TCGDEX_BASE = "https://api.tcgdex.net/v2/en";
 const CARD_BATCH_SIZE = 20;
@@ -190,7 +191,7 @@ function App() {
     cardIsLoading ||
     (cardIds.length > 0 && cardData == null);
 
-  const spinnerPhase = useSpinnerPhase(isLoadingResults);
+  const spinnerPhase = usePokeballLoader(isLoadingResults);
 
   const rarityFilteredCardData = useMemo(() => {
     if (rarityFilterDisabled) return cardData;
