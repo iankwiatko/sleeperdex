@@ -1,15 +1,19 @@
-import "./App.css";
+import "./Homepage.css";
 
 import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 
-import { useQuery } from "@tanstack/react-query";
-import { fetchWithTimeout } from "./utils/fetchWithTimeout";
-import { DebugModal } from "./components/DebugModal/DebugModal";
-import { PokeballLoader } from "./components/PokeballLodaer/PokeballLoader";
-import { usePokeballLoader } from "./components/PokeballLodaer/usePokeballLoader";
+import { DebugModal } from "../../components/DebugModal/DebugModal";
+import { PokeballLoader } from "../../components/PokeballLodaer/PokeballLoader";
+import { usePokeballLoader } from "../../components/PokeballLodaer/usePokeballLoader";
+import { useCardQuery } from "../../api/getCardDataFromSet";
+import { useSeriesQuery } from "../../api/getSeries";
+import { useSetQuery } from "../../api/getSet";
+import type { SortOrder } from "../../types/SortOrder";
+import { getCardImageUrl } from "../../utils/getCardImageUrl";
+import { getCardMaxPrice } from "../../utils/getCardMaxPrice";
+import { getNumberedSets } from "../../utils/getNumberedSets";
+import { getUniqueCardIds } from "../../utils/getUniqueCardIds";
 
-const TCGDEX_BASE = "https://api.tcgdex.net/v2/en";
-const CARD_BATCH_SIZE = 20;
 const PRICE_FILTER_DEBOUNCE_MS = 500;
 const SERIES_OPTIONS = ["me", "sv", "swsh"];
 const SERIES_LABELS: Record<string, string> = {
@@ -26,118 +30,7 @@ const ALLOWED_RARITIES = [
   "holo rare v",
 ];
 
-type SeriesData = {
-  sets?: Array<{ id: string; name: string }>;
-};
-
-type SetData = {
-  name?: string;
-  cards?: Array<{ id: string }>;
-};
-
-type Card = {
-  id: string;
-  localId: string;
-  name: string;
-  rarity?: string;
-  image?: string;
-  set?: {
-    cardCount?: {
-      official?: number;
-    };
-  };
-  pricing?: {
-    tcgplayer?: Record<string, { marketPrice?: number | null }>;
-  };
-};
-
-function getCardImageUrl(card: Card): string | undefined {
-  return card.image ? `${card.image}/low.webp` : undefined;
-}
-
-type SortOrder = "asc" | "desc";
-
-async function getSeries(seriesId: string): Promise<SeriesData> {
-  const res = await fetchWithTimeout(`${TCGDEX_BASE}/series/${seriesId}`);
-  if (!res.ok) {
-    throw new Error(
-      `Failed to fetch series "${seriesId}": ${res.status} ${res.statusText}`,
-    );
-  }
-  return res.json() as Promise<SeriesData>;
-}
-
-async function getSet(setId: string): Promise<SetData> {
-  const res = await fetchWithTimeout(`${TCGDEX_BASE}/sets/${setId}`);
-  if (!res.ok) {
-    throw new Error(
-      `Failed to fetch set "${setId}": ${res.status} ${res.statusText}`,
-    );
-  }
-  return res.json() as Promise<SetData>;
-}
-
-async function getCard(cardId: string): Promise<Card> {
-  const res = await fetchWithTimeout(`${TCGDEX_BASE}/cards/${cardId}`);
-  if (!res.ok) {
-    throw new Error(
-      `Failed to fetch card "${cardId}": ${res.status} ${res.statusText}`,
-    );
-  }
-  return res.json() as Promise<Card>;
-}
-
-function getUniqueCardIds(setData: SetData | undefined): string[] {
-  return [...new Set(setData?.cards?.map((card) => card.id) ?? [])];
-}
-
-function getCardMaxPrice(card: Card): number {
-  const prices = Object.values(card.pricing?.tcgplayer ?? {})
-    .map((variant) => variant?.marketPrice)
-    .filter((marketPrice): marketPrice is number => marketPrice != null);
-  return prices.length ? Math.max(...prices) : -Infinity;
-}
-
-const NUMBERED_SET_ID_PATTERN = /^[a-z]+\d{1,3}(\.\d+[a-z]?)?$/i;
-
-function getNumberedSets(
-  seriesData: SeriesData | undefined,
-): Array<{ id: string; name: string }> {
-  return (
-    seriesData?.sets?.filter((set) => NUMBERED_SET_ID_PATTERN.test(set.id)) ??
-    []
-  );
-}
-
-async function getCardDataFromSet(
-  cardIds: string[],
-  batchSize = CARD_BATCH_SIZE,
-): Promise<Card[]> {
-  const cardDetails: Card[] = [];
-
-  for (let i = 0; i < cardIds.length; i += batchSize) {
-    const chunk = cardIds.slice(i, i + batchSize);
-    const chunkResults = await Promise.allSettled(
-      chunk.map((cardId) => getCard(cardId)),
-    );
-    for (const [index, outcome] of chunkResults.entries()) {
-      const cardId = chunk[index];
-
-      if (outcome.status === "fulfilled") {
-        cardDetails.push(outcome.value);
-      } else {
-        console.error(`Card fetch failed for ${cardId}:`, outcome.reason);
-      }
-    }
-  }
-  return cardDetails;
-}
-
-//---------------------------------------------------------------------------------
-// Main App Component
-//---------------------------------------------------------------------------------
-
-function App() {
+function Homepage() {
   const [seriesId, setSeriesId] = useState(SERIES_OPTIONS[0]);
   const [selectedSetId, setSelectedSetId] = useState("");
   const [price, setPrice] = useState("");
@@ -151,10 +44,7 @@ function App() {
     isLoading: isSeriesLoading,
     isError: isSeriesError,
     error: seriesError,
-  } = useQuery({
-    queryKey: ["series", seriesId],
-    queryFn: () => getSeries(seriesId),
-  });
+  } = useSeriesQuery(seriesId);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -173,11 +63,7 @@ function App() {
     isLoading: setIsLoading,
     isError: setIsError,
     error: setError,
-  } = useQuery({
-    queryKey: ["set", effectiveSetId],
-    queryFn: () => getSet(effectiveSetId),
-    enabled: Boolean(effectiveSetId),
-  });
+  } = useSetQuery(effectiveSetId);
 
   const cardIds = useMemo(() => getUniqueCardIds(setData), [setData]);
 
@@ -186,11 +72,7 @@ function App() {
     isLoading: cardIsLoading,
     isError: cardIsError,
     error: cardError,
-  } = useQuery({
-    queryKey: ["cards", effectiveSetId, cardIds],
-    queryFn: () => getCardDataFromSet(cardIds),
-    enabled: cardIds.length > 0,
-  });
+  } = useCardQuery(cardIds, effectiveSetId);
 
   const minPrice = appliedPrice ? Number(appliedPrice) : undefined;
 
@@ -409,4 +291,4 @@ function App() {
   );
 }
 
-export default App;
+export default Homepage;
