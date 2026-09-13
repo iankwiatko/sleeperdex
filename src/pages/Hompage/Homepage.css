@@ -140,6 +140,7 @@
   cursor: pointer;
   transition:
     background-color 0.2s ease,
+    opacity 0.2s ease,
     transform 0.2s ease,
     box-shadow 0.2s ease;
 }
@@ -158,6 +159,12 @@
 .theme-toggle svg {
   width: 1.25rem;
   height: 1.25rem;
+}
+
+.theme-toggle.is-scrolled {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-0.5rem);
 }
 
 .app-header {
@@ -241,6 +248,11 @@
 .control-group input:focus-visible {
   outline: 0.125rem solid var(--accent);
   outline-offset: 0.125rem;
+}
+
+.control-group option {
+  background: var(--bg);
+  color: var(--text-h);
 }
 
 @media (max-width: 40em) {

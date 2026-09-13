@@ -33,6 +33,13 @@ const ALLOWED_RARITIES = [
   "holo rare v",
 ];
 
+function formatPrice(value: string): string {
+  const parsedPrice = Number(value);
+  return Number.isFinite(parsedPrice) && parsedPrice >= 0
+    ? parsedPrice.toFixed(2)
+    : "0.00";
+}
+
 function Homepage() {
   const [theme, setTheme] = useState<Theme>(() => {
     const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
@@ -46,17 +53,26 @@ function Homepage() {
   });
   const [seriesId, setSeriesId] = useState(SERIES_OPTIONS[0]);
   const [selectedSetId, setSelectedSetId] = useState("");
-  const [price, setPrice] = useState("");
+  const [price, setPrice] = useState("0.00");
   const [appliedPrice, setAppliedPrice] = useState("");
   const [rarityFilterDisabled, setRarityFilterDisabled] = useState(false);
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [isDebugOpen, setIsDebugOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     document.documentElement.style.colorScheme = theme;
     window.localStorage.setItem(THEME_STORAGE_KEY, theme);
   }, [theme]);
+
+  useEffect(() => {
+    const updateScrollState = () => setIsScrolled(window.scrollY > 24);
+
+    updateScrollState();
+    window.addEventListener("scroll", updateScrollState, { passive: true });
+    return () => window.removeEventListener("scroll", updateScrollState);
+  }, []);
 
   const {
     data: seriesData,
@@ -93,7 +109,8 @@ function Homepage() {
     error: cardError,
   } = useCardQuery(cardIds, effectiveSetId);
 
-  const minPrice = appliedPrice ? Number(appliedPrice) : undefined;
+  const minPrice =
+    appliedPrice && Number(appliedPrice) > 0 ? Number(appliedPrice) : undefined;
 
   const isLoadingResults =
     isSeriesLoading ||
@@ -135,7 +152,7 @@ function Homepage() {
     <>
       <button
         type="button"
-        className="theme-toggle"
+        className={`theme-toggle${isScrolled ? " is-scrolled" : ""}`}
         onClick={() =>
           setTheme((currentTheme) =>
             currentTheme === "dark" ? "light" : "dark",
@@ -220,17 +237,23 @@ function Homepage() {
           </select>
         </div>
         <div className="control-group">
-          <label htmlFor="price-input">Minimum Market Price</label>
+          <label htmlFor="price-input">Minimum Market Price ($)</label>
           <input
             id="price-input"
-            type="number"
-            min="0"
-            placeholder="0.00"
-            step="0.01"
+            type="text"
+            inputMode="decimal"
+            pattern="[0-9]*\.?[0-9]{0,2}"
             value={price}
-            onChange={(event: ChangeEvent<HTMLInputElement>) =>
-              setPrice(event.target.value)
+            onChange={(event: ChangeEvent<HTMLInputElement>) => {
+              const nextPrice = event.target.value;
+              if (/^\d*(\.\d{0,2})?$/.test(nextPrice)) {
+                setPrice(nextPrice);
+              }
+            }}
+            onFocus={(event: ChangeEvent<HTMLInputElement>) =>
+              event.target.select()
             }
+            onBlur={() => setPrice(formatPrice(price))}
           />
         </div>
         <div className="control-group">
