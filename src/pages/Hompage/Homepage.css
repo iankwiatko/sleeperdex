@@ -121,6 +121,45 @@
   color: var(--text-h);
 }
 
+.theme-toggle {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 20;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--text-h);
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.theme-toggle:hover {
+  background: var(--social-bg);
+  box-shadow: var(--shadow);
+}
+
+.theme-toggle:focus-visible {
+  outline: none;
+  background: var(--social-bg);
+  box-shadow: var(--shadow);
+}
+
+.theme-toggle svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
 .app-header {
   display: flex;
   align-items: center;

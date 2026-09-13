@@ -1,6 +1,7 @@
 import "./Homepage.css";
 
 import { useEffect, useMemo, useState, type ChangeEvent } from "react";
+import { Moon, Sun } from "lucide-react";
 
 import { DebugModal } from "../../components/DebugModal/DebugModal";
 import { PokeballLoader } from "../../components/PokeballLodaer/PokeballLoader";
@@ -16,6 +17,8 @@ import { getUniqueCardIds } from "../../utils/getUniqueCardIds";
 
 const PRICE_FILTER_DEBOUNCE_MS = 500;
 const SERIES_OPTIONS = ["me", "sv", "swsh"];
+const THEME_STORAGE_KEY = "sleeperdex-theme";
+type Theme = "light" | "dark";
 const SERIES_LABELS: Record<string, string> = {
   me: "Mega Evolution",
   sv: "Scarlet & Violet",
@@ -31,6 +34,16 @@ const ALLOWED_RARITIES = [
 ];
 
 function Homepage() {
+  const [theme, setTheme] = useState<Theme>(() => {
+    const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+    if (savedTheme === "light" || savedTheme === "dark") {
+      return savedTheme;
+    }
+
+    return window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  });
   const [seriesId, setSeriesId] = useState(SERIES_OPTIONS[0]);
   const [selectedSetId, setSelectedSetId] = useState("");
   const [price, setPrice] = useState("");
@@ -38,6 +51,12 @@ function Homepage() {
   const [rarityFilterDisabled, setRarityFilterDisabled] = useState(false);
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [isDebugOpen, setIsDebugOpen] = useState(false);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.style.colorScheme = theme;
+    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+  }, [theme]);
 
   const {
     data: seriesData,
@@ -114,6 +133,19 @@ function Homepage() {
 
   return (
     <>
+      <button
+        type="button"
+        className="theme-toggle"
+        onClick={() =>
+          setTheme((currentTheme) =>
+            currentTheme === "dark" ? "light" : "dark",
+          )
+        }
+        aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+      >
+        {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+      </button>
+
       {import.meta.env.DEV && (
         <>
           <div

@@ -34,9 +34,8 @@
     var(--accent) 0%,
     var(--accent) calc(50% - 0.0625rem),
     var(--text-h) calc(50% - 0.0625rem),
-    var(--text-h) calc(50% + 0.0625rem),
-    #fff calc(50% + 0.0625rem),
-    #fff 100%
+    var(--bg) calc(50% + 0.0625rem),
+    var(--bg) 100%
   );
 }
 
@@ -46,7 +45,7 @@
   left: 50%;
   width: 0.8125rem;
   height: 0.8125rem;
-  background: #fff;
+  background: var(--bg);
   border: 0.125rem solid var(--text-h);
   border-radius: 50%;
   transform: translate(-50%, -50%);
