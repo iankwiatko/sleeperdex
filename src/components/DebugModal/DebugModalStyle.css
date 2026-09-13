@@ -56,9 +56,40 @@
   justify-content: center;
 }
 
+.debug-modal-content hr {
+  width: 100%;
+  margin: 0.25rem 0;
+  border: 0;
+  border-top: 0.0625rem solid var(--border);
+}
+
+.debug-status-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.debug-status-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.debug-status-group:has(.debug-status-badge:only-child) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .debug-status-badge {
-  align-self: center;
+  display: grid;
+  gap: 0.25rem;
+  color: var(--text-h);
+  text-decoration: none;
   line-height: 0;
+}
+
+.debug-status-badge span {
+  font-size: 0.8125rem;
+  line-height: 1.2;
+  text-align: left;
 }
 
 .debug-status-badge:focus-visible {

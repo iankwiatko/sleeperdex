@@ -2,6 +2,18 @@ import { type ChangeEvent } from "react";
 import { createPortal } from "react-dom";
 import "./DebugModalStyle.css";
 
+const TCGDEX_STATUS_MONITOR_GROUPS = [
+  [
+    { id: "api-na-east", label: "API NA East" },
+    { id: "assets-na-east", label: "Assets NA East" },
+  ],
+  [
+    { id: "api-eu-west", label: "API EU West" },
+    { id: "assets", label: "Assets EU West" },
+  ],
+  [{ id: "api-as1", label: "API AS South" }],
+];
+
 interface DebugModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -57,17 +69,28 @@ export function DebugModal({
             }
           />
         </div>
-        <a
-          className="debug-status-badge"
-          href="https://status.tcgdex.dev/?monitor=api-na-east"
-          target="_blank"
-          rel="noreferrer"
-        >
-          <img
-            src="https://status.tcgdex.dev/badge/api-na-east/status"
-            alt="TCGdex API North America East status"
-          />
-        </a>
+        <hr />
+        <div className="debug-status-list">
+          {TCGDEX_STATUS_MONITOR_GROUPS.map((group) => (
+            <div className="debug-status-group" key={group[0].id}>
+              {group.map((monitor) => (
+                <a
+                  className="debug-status-badge"
+                  href={`https://status.tcgdex.dev/?monitor=${monitor.id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  key={monitor.id}
+                >
+                  <span>{monitor.label}</span>
+                  <img
+                    src={`https://status.tcgdex.dev/badge/${monitor.id}/status`}
+                    alt={`${monitor.label} status`}
+                  />
+                </a>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
     </div>,
     document.body,
