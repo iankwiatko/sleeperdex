@@ -21,6 +21,8 @@ interface DebugModalProps {
   setIsLoading: boolean;
   cardIsLoading: boolean;
   cardCount: number;
+  setFilterDisabled: boolean;
+  onToggleSetFilter: (disabled: boolean) => void;
   rarityFilterDisabled: boolean;
   onToggleRarityFilter: (disabled: boolean) => void;
 }
@@ -32,6 +34,8 @@ export function DebugModal({
   setIsLoading,
   cardIsLoading,
   cardCount,
+  setFilterDisabled,
+  onToggleSetFilter,
   rarityFilterDisabled,
   onToggleRarityFilter,
 }: DebugModalProps) {
@@ -58,6 +62,17 @@ export function DebugModal({
               : `Loaded ${cardCount} total cards from set.`}
           </p>
         )}
+        <div className="debug-modal-row">
+          <label htmlFor="set-filter-toggle">disable set filter</label>
+          <input
+            id="set-filter-toggle"
+            type="checkbox"
+            checked={setFilterDisabled}
+            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+              onToggleSetFilter(event.target.checked)
+            }
+          />
+        </div>
         <div className="debug-modal-row">
           <label htmlFor="rarity-filter-toggle">disable rarity filter</label>
           <input

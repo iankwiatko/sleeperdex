@@ -55,6 +55,7 @@ function Homepage() {
   const [selectedSetId, setSelectedSetId] = useState("");
   const [price, setPrice] = useState("0.00");
   const [appliedPrice, setAppliedPrice] = useState("");
+  const [setFilterDisabled, setSetFilterDisabled] = useState(false);
   const [rarityFilterDisabled, setRarityFilterDisabled] = useState(false);
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [isDebugOpen, setIsDebugOpen] = useState(false);
@@ -88,9 +89,15 @@ function Homepage() {
     return () => window.clearTimeout(timeoutId);
   }, [price]);
 
-  const numberedSets = useMemo(() => getNumberedSets(seriesData), [seriesData]);
+  const availableSets = useMemo(
+    () =>
+      setFilterDisabled
+        ? (seriesData?.sets ?? [])
+        : getNumberedSets(seriesData),
+    [seriesData, setFilterDisabled],
+  );
 
-  const latestSetId = numberedSets[numberedSets.length - 1]?.id ?? "";
+  const latestSetId = availableSets[availableSets.length - 1]?.id ?? "";
   const effectiveSetId = selectedSetId || latestSetId;
 
   const {
@@ -184,6 +191,8 @@ function Homepage() {
             setIsLoading={setIsLoading}
             cardIsLoading={cardIsLoading}
             cardCount={cardData?.length ?? 0}
+            setFilterDisabled={setFilterDisabled}
+            onToggleSetFilter={setSetFilterDisabled}
             rarityFilterDisabled={rarityFilterDisabled}
             onToggleRarityFilter={setRarityFilterDisabled}
           />
@@ -224,12 +233,12 @@ function Homepage() {
           <select
             id="set-select"
             value={effectiveSetId}
-            disabled={isSeriesLoading || !numberedSets.length}
+            disabled={isSeriesLoading || !availableSets.length}
             onChange={(event: ChangeEvent<HTMLSelectElement>) =>
               setSelectedSetId(event.target.value)
             }
           >
-            {numberedSets.map((serieSet) => (
+            {availableSets.map((serieSet) => (
               <option key={serieSet.id} value={serieSet.id}>
                 {serieSet.name} ({serieSet.id})
               </option>
@@ -291,7 +300,7 @@ function Homepage() {
           {spinnerPhase === "hidden" && (
             <ul
               className="card-results"
-              key={`${effectiveSetId}-${sortOrder}-${appliedPrice}-${rarityFilterDisabled}`}
+              key={`${setFilterDisabled ? seriesId : effectiveSetId}-${sortOrder}-${appliedPrice}-${rarityFilterDisabled}`}
             >
               {sortedCardData?.map((card, index) => {
                 const imageUrl = getCardImageUrl(card);
