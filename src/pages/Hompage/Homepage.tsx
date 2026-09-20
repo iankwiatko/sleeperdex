@@ -16,13 +16,14 @@ import { getNumberedSets } from "../../utils/getNumberedSets";
 import { getUniqueCardIds } from "../../utils/getUniqueCardIds";
 
 const PRICE_FILTER_DEBOUNCE_MS = 500;
-const SERIES_OPTIONS = ["me", "sv", "swsh"];
+const SERIES_OPTIONS = ["me", "sv", "swsh", "sm"];
 const THEME_STORAGE_KEY = "sleeperdex-theme";
 type Theme = "light" | "dark";
 const SERIES_LABELS: Record<string, string> = {
   me: "Mega Evolution",
   sv: "Scarlet & Violet",
   swsh: "Sword & Shield",
+  sm: "Sun & Moon",
 };
 const ALLOWED_RARITIES = [
   "common",
